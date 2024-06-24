@@ -66,31 +66,17 @@ class Commands extends Command implements PluginOwned {
                     if (isset($args[1])) {
                         if (array_key_exists(strtolower($args[1]) . "_snpc", SimpleNPC::getInstance()->getRegisteredNPC())) {
                             if (is_a(SimpleNPC::getInstance()->getRegisteredNPC()[strtolower($args[1]) . "_snpc"][0], CustomHuman::class, true)) {
-	                            $skin = $args[3];
-	                            if (isset($skin)) {
+	                            if (isset($args[3])) {
+		                            $skin = $args[3];
 		                            $targetSkin = Server::getInstance()->getPlayerByPrefix($skin)?->getSkin();
 		                            if ($targetSkin === null) {
 			                            $targetSkin = $sender->getSkin();
 		                            }
-                                    $id = NPCManager::getInstance()->spawnNPC(strtolower($args[1]) . "_snpc", $sender, $args[2], null, $sender->getSkin()->getSkinData());
-                                    if ($id !== null) {
-                                        $npc = $sender->getServer()->getWorldManager()->findEntity($id);
-
-                                        if ($npc instanceof CustomHuman) {
-	                                        $npc->setSkin($targetSkin);
-	                                        $npc->sendSkin();
-                                        }
-                                    }
-
-                                    $sender->sendMessage(TextFormat::DARK_GREEN . "Creating " . ucfirst($args[1]) . " NPC with nametag $args[2] for you...");
-                                    return true;
-                                } elseif (isset($args[2])) {
-                                    $sender->sendMessage(TextFormat::DARK_GREEN . "Creating " . ucfirst($args[1]) . " NPC with nametag $args[2] for you...");
-                                    NPCManager::getInstance()->spawnNPC(strtolower($args[1]) . "_snpc", $sender, $args[2], null, $sender->getSkin()->getSkinData());
-                                    return true;
-                                }
-
-                                NPCManager::getInstance()->spawnNPC(strtolower($args[1]) . "_snpc", $sender, $sender->getName(), null, $sender->getSkin()->getSkinData());
+	                            } else {
+		                            $targetSkin = $sender->getSkin();
+	                            }
+	                            $sender->sendMessage(TextFormat::DARK_GREEN . "Creating " . ucfirst($args[1]) . " NPC with nametag $args[2] for you...");
+	                            NPCManager::getInstance()->spawnNPC(strtolower($args[1]) . "_snpc", $sender, $sender->getName(), null, $sender->getSkin()->getSkinData());
                             } else {
                                 if (isset($args[2])) {
                                     NPCManager::getInstance()->spawnNPC(strtolower($args[1]) . "_snpc", $sender, $args[2]);
