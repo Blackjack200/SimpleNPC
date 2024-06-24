@@ -14,7 +14,6 @@ use brokiem\snpc\entity\CustomHuman;
 use brokiem\snpc\entity\WalkingHuman;
 use brokiem\snpc\SimpleNPC;
 use brokiem\snpc\task\async\URLToCapeTask;
-use brokiem\snpc\task\async\URLToSkinTask;
 use EasyUI\element\Button;
 use EasyUI\element\Dropdown;
 use EasyUI\element\Input;
@@ -22,10 +21,12 @@ use EasyUI\element\Option;
 use EasyUI\utils\FormResponse;
 use EasyUI\variant\CustomForm;
 use EasyUI\variant\SimpleForm;
+use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Skin;
 use pocketmine\item\ItemIds;
 use pocketmine\player\Player;
+use pocketmine\Server;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\utils\TextFormat;
 
@@ -52,7 +53,7 @@ class FormManager {
 
                                     $cusForm->addElement("nametag", new Input("NPC Nametag: [string]\n" . 'Note: Use (" ") if nametag has space'));
                                     if (is_a($saveNames[0], CustomHuman::class, true)) {
-                                        $cusForm->addElement("skin", new Input("NPC Skin URL: [null/string]"));
+	                                    $cusForm->addElement("skin", new Input("NPC Skin: [url or player name], left empty to use yours"));
                                     }
                                     $player->sendForm($cusForm);
                                 }));
@@ -95,7 +96,7 @@ class FormManager {
         $cusForm->setSubmitListener(function(Player $player, FormResponse $response) use ($plugin) {
             $type = $response->getDropdownSubmittedOptionId("type") === null ? "" : strtolower($response->getDropdownSubmittedOptionId("type"));
             $nametag = $response->getInputSubmittedText("nametag") === "" ? $player->getName() : $response->getInputSubmittedText("nametag");
-            $skin = $response->getInputSubmittedText("skin") === "null" ? "" : $response->getInputSubmittedText("skin");
+	        $skin = $response->getInputSubmittedText("skin");
             $npcEditId = $response->getInputSubmittedText("snpcid_edit");
 
             if ($npcEditId != "") {
@@ -108,7 +109,7 @@ class FormManager {
                 return;
             }
 
-            $plugin->getServer()->getCommandMap()->dispatch($player, "snpc add $type $nametag $skin");
+	        $plugin->getServer()->getCommandMap()->dispatch($player, "snpc add \"$type\" \"$nametag\" \"$skin\"");
         });
     }
 
@@ -154,7 +155,7 @@ class FormManager {
                                 break;
                             case "setHeld":
                                 if ($entity instanceof CustomHuman) {
-                                    if ($sender->getInventory()->getItemInHand()->getId() === ItemIds::AIR) {
+	                                if ($sender->getInventory()->getItemInHand()->getTypeId() === BlockTypeIds::AIR) {
                                         $sender->sendMessage(TextFormat::RED . "Please hold the item in your hand");
                                     } else {
                                         $entity->sendHeldItemFrom($sender);
@@ -281,12 +282,12 @@ class FormManager {
                         return;
                     }
 
-                    if (!preg_match("/^[^\?]+\.(png)(?:\?|$)/", $skin)) {
-                        $player->sendMessage(TextFormat::RED . "Invalid skin url file format! (Only PNG Supported)");
-                        return;
-                    }
-
-                    $plugin->getServer()->getAsyncPool()->submitTask(new URLToSkinTask($player->getName(), $plugin->getDataFolder(), $skin, $entity));
+	                $targetSkin = Server::getInstance()->getPlayerByPrefix($skin)?->getSkin();
+	                if ($targetSkin === null) {
+		                $targetSkin = $player->getSkin();
+	                }
+	                $entity->setSkin($targetSkin);
+	                $entity->sendSkin();
                     $player->sendMessage(TextFormat::GREEN . "Successfully change npc skin (NPC ID: " . $entity->getId() . ")");
                 } elseif ($scale != "") {
                     if ((float)$scale <= 0) {

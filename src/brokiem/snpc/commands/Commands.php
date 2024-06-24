@@ -9,13 +9,13 @@ use brokiem\snpc\entity\CustomHuman;
 use brokiem\snpc\manager\form\FormManager;
 use brokiem\snpc\manager\NPCManager;
 use brokiem\snpc\SimpleNPC;
-use brokiem\snpc\task\async\URLToSkinTask;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\entity\Entity;
 use pocketmine\player\Player;
 use pocketmine\plugin\Plugin;
 use pocketmine\plugin\PluginOwned;
+use pocketmine\Server;
 use pocketmine\utils\TextFormat;
 
 class Commands extends Command implements PluginOwned {
@@ -66,18 +66,19 @@ class Commands extends Command implements PluginOwned {
                     if (isset($args[1])) {
                         if (array_key_exists(strtolower($args[1]) . "_snpc", SimpleNPC::getInstance()->getRegisteredNPC())) {
                             if (is_a(SimpleNPC::getInstance()->getRegisteredNPC()[strtolower($args[1]) . "_snpc"][0], CustomHuman::class, true)) {
-                                if (isset($args[3])) {
-                                    if (!preg_match("/^[^\?]+\.(png)(?:\?|$)/", $args[3])) {
-                                        $sender->sendMessage(TextFormat::RED . "Invalid skin url file format! (Only PNG Supported)");
-                                        return true;
-                                    }
-
+	                            $skin = $args[3];
+	                            if (isset($skin)) {
+		                            $targetSkin = Server::getInstance()->getPlayerByPrefix($skin)?->getSkin();
+		                            if ($targetSkin === null) {
+			                            $targetSkin = $sender->getSkin();
+		                            }
                                     $id = NPCManager::getInstance()->spawnNPC(strtolower($args[1]) . "_snpc", $sender, $args[2], null, $sender->getSkin()->getSkinData());
                                     if ($id !== null) {
                                         $npc = $sender->getServer()->getWorldManager()->findEntity($id);
 
                                         if ($npc instanceof CustomHuman) {
-                                            $plugin->getServer()->getAsyncPool()->submitTask(new URLToSkinTask($sender->getName(), $plugin->getDataFolder(), $args[3], $npc));
+	                                        $npc->setSkin($targetSkin);
+	                                        $npc->sendSkin();
                                         }
                                     }
 
@@ -161,14 +162,18 @@ class Commands extends Command implements PluginOwned {
                     $sender->sendMessage("§cNPC List and Location: (" . count($entityNames) . ")\n §f- " . implode("\n - ", $entityNames));
                     break;
                 case "help":
-                    $sender->sendMessage("\n§7---- ---- ---- - ---- ---- ----\n§eCommand List:\n§2» /snpc spawn <type> <nametag> <skinUrl>\n§2» /snpc edit <id>\n§2» /snpc reload\n§2» /snpc ui\n§2» /snpc remove <id>\n§2» /snpc list\n§7---- ---- ---- - ---- ---- ----");
+	                $this->sendHelp($sender);
                     break;
                 default:
                     $sender->sendMessage(TextFormat::RED . "Subcommand '$args[0]' not found! Try '/snpc help' for help.");
                     break;
             }
         } else {
-            $sender->sendMessage("§7---- ---- [ §3SimpleNPC§7 ] ---- ----\n§bAuthor: @brokiem\n§3Source Code: github.com/brokiem/SimpleNPC\nVersion " . $this->getOwningPlugin()->getDescription()->getVersion() . "\n§7---- ---- ---- - ---- ---- ----");
+	        if ($sender instanceof Player) {
+		        FormManager::getInstance()->sendUIForm($sender);
+		        return true;
+	        }
+	        $this->sendHelp($sender);
         }
 
         return true;
@@ -177,4 +182,8 @@ class Commands extends Command implements PluginOwned {
     public function getOwningPlugin(): Plugin {
         return $this->owner;
     }
+
+	private function sendHelp(CommandSender $sender) : null {
+		return $sender->sendMessage("\n§7---- ---- ---- - ---- ---- ----\n§eCommand List:\n§2» /snpc spawn <type> <nametag> <skinUrl>\n§2» /snpc edit <id>\n§2» /snpc reload\n§2» /snpc ui\n§2» /snpc remove <id>\n§2» /snpc list\n§7---- ---- ---- - ---- ---- ----");
+	}
 }
