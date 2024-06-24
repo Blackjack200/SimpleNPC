@@ -22,9 +22,16 @@ use pocketmine\player\Player;
 use pocketmine\utils\TextFormat;
 
 class CustomHuman extends Human {
-    protected $gravity = 0.0;
+	public const string TAG_SKIN = "Skin";
+	public const string TAG_ENABLE_ROTATION = "EnableRotation";
+	public const string TAG_SHOW_NAMETAG = "ShowNametag";
+	public const string TAG_SCALE = "Scale";
+	public const string TAG_COMMAND = "Commands";
+	protected bool $gravityEnabled = false;
 
-    protected bool $canWalk = false;
+	protected function getInitialGravity() : float { return 0.0; }
+
+	protected bool $canWalk = false;
     protected bool $lookToPlayers;
 
     protected CommandManager $commandManager;
@@ -32,31 +39,31 @@ class CustomHuman extends Human {
     protected function initEntity(CompoundTag $nbt): void {
         parent::initEntity($nbt);
 
-        $skinTag = $nbt->getCompoundTag("Skin");
+        $skinTag = $nbt->getCompoundTag(self::TAG_SKIN);
 
         if ($skinTag === null) {
             throw new \UnexpectedValueException("Missing skin data");
         }
 
         $this->commandManager = new CommandManager($nbt);
-        $this->lookToPlayers = (bool)$nbt->getByte("EnableRotation", 1);
+        $this->lookToPlayers = (bool)$nbt->getByte(self::TAG_ENABLE_ROTATION, 1);
 
-        $this->setNameTagAlwaysVisible((bool)$nbt->getByte("ShowNametag", 1));
-        $this->setNameTagVisible((bool)$nbt->getByte("ShowNametag", 1));
-        $this->setScale($nbt->getFloat("Scale", 1));
+        $this->setNameTagAlwaysVisible((bool)$nbt->getByte(self::TAG_SHOW_NAMETAG, 1));
+        $this->setNameTagVisible((bool)$nbt->getByte(self::TAG_SHOW_NAMETAG, 1));
+        $this->setScale($nbt->getFloat(self::TAG_SCALE, 1));
     }
 
     public function saveNBT(): CompoundTag {
         $nbt = parent::saveNBT();
-        $nbt->setFloat("Scale", $this->getScale()); //pm doesn't save this to the nbt
-        $nbt->setByte("EnableRotation", (int)$this->lookToPlayers);
-        $nbt->setByte("ShowNametag", (int)$this->isNameTagAlwaysVisible());
+        $nbt->setFloat(self::TAG_SCALE, $this->getScale()); //pm doesn't save this to the nbt
+        $nbt->setByte(self::TAG_ENABLE_ROTATION, (int)$this->lookToPlayers);
+        $nbt->setByte(self::TAG_SHOW_NAMETAG, (int)$this->isNameTagAlwaysVisible());
 
         $listTag = new ListTag([], NBT::TAG_String); //commands
         foreach ($this->commandManager->getAll() as $command) {
             $listTag->push(new StringTag($command));
         }
-        $nbt->setTag("Commands", $listTag);
+        $nbt->setTag(self::TAG_COMMAND, $listTag);
         return $nbt;
     }
 
@@ -105,8 +112,9 @@ class CustomHuman extends Human {
 
         execute:
         if (!empty($commands = $this->getCommandManager()->getAll())) {
+	        $map = $plugin->getServer()->getCommandMap();
             foreach ($commands as $command) {
-                $plugin->getServer()->getCommandMap()->dispatch(new ConsoleCommandSender($player->getServer(), $plugin->getServer()->getLanguage()), str_replace("{player}", '"' . $player->getName() . '"', $command));
+	            $map->dispatch(SimpleNPC::$sender, str_replace("{player}", '"' . $player->getName() . '"', $command));
             }
         }
     }

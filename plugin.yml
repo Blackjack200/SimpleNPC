@@ -1,29 +1,13 @@
 name: SimpleNPC
 main: brokiem\snpc\SimpleNPC
-version: 4.0.2-dev
-api: 4.0.0
+version: 4.0.3
+api: 5.0.0
 author: brokiem
 
 website: https://github.com/brokiem/SimpleNPC
 
 permissions:
-  simplenpc.spawn:
-    default: op
-  simplenpc.edit:
-    default: op
-  simplenpc.id:
-    default: op
-  simplenpc.notify:
-    default: op
-  simplenpc.ui:
-    default: op
-  simplenpc.reload:
-    default: op
-  simplenpc.remove:
-    default: op
-  simplenpc.migrate:
-    default: op
-  simplenpc.list:
+  simplenpc.command:
     default: op
   simplenpc.rca:
     default: op

@@ -15,16 +15,14 @@ use brokiem\snpc\entity\BaseNPC;
 use brokiem\snpc\entity\CustomHuman;
 use brokiem\snpc\entity\WalkingHuman;
 use brokiem\snpc\manager\NPCManager;
-use brokiem\updatechecker\Promise;
-use brokiem\updatechecker\UpdateChecker;
 use EasyUI\EasyForm;
+use pocketmine\console\ConsoleCommandSender;
 use pocketmine\entity\Entity;
 use pocketmine\entity\EntityDataHelper;
 use pocketmine\entity\EntityFactory;
 use pocketmine\entity\Human;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\plugin\PluginBase;
-use pocketmine\scheduler\ClosureTask;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
 
@@ -42,6 +40,7 @@ class SimpleNPC extends PluginBase {
     public array $cachedUpdate = [];
     public array $idPlayers = [];
     public const IS_DEV = true;
+	public static ConsoleCommandSender $sender;
 
     protected function onEnable(): void {
         if (!class_exists(EasyForm::class)) {
@@ -59,17 +58,10 @@ class SimpleNPC extends PluginBase {
         self::registerEntity(WalkingHuman::class, self::ENTITY_WALKING_HUMAN);
         NPCManager::getInstance()->registerAllNPC();
 
+	    self::$sender = new ConsoleCommandSender($this->getServer(), $this->getServer()->getLanguage());
         $this->initConfiguration();
         $this->getServer()->getCommandMap()->registerAll("SimpleNPC", [new Commands("snpc", $this), new RcaCommand("rca", $this)]);
         $this->getServer()->getPluginManager()->registerEvents(new EventHandler($this), $this);
-
-        $this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function(): void {
-            UpdateChecker::checkUpdate($this->getDescription()->getName(), $promise = new Promise());
-
-            $promise->then(function($data) {
-                $this->cachedUpdate = [$data["version"], $data["last_state_change_date"], $data["html_url"]];
-            });
-        }), 864000); // 12 hours
     }
 
     public static function registerEntity(string $entityClass, string $name, array $saveNames = []): void {

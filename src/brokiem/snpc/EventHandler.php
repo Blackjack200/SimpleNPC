@@ -27,19 +27,17 @@ use pocketmine\player\Player;
 
 class EventHandler implements Listener {
 
-    public function __construct(private SimpleNPC $plugin) { }
+	protected $tempVector;
+	protected $movePlayerPacket;
+	protected $moveActorPacket;
+	protected $tempVector2;
 
-    public function onJoin(PlayerJoinEvent $event): void {
-        $player = $event->getPlayer();
-
-        if ($player->hasPermission("simplenpc.notify") and !empty($this->plugin->cachedUpdate)) {
-            [$latestVersion, $updateDate, $updateUrl] = $this->plugin->cachedUpdate;
-
-            if ($this->plugin->getDescription()->getVersion() !== $latestVersion) {
-                $player->sendMessage(" \n§aSimpleNPC §bv$latestVersion §ahas been released on §b" . date("j F Y", $updateDate) . ". §aDownload the new update at §b$updateUrl\n ");
-            }
-        }
-    }
+	public function __construct(private SimpleNPC $plugin) {
+		$this->tempVector = new Vector2(0, 0);
+		$this->tempVector2 = new Vector2(0, 0);
+		$this->movePlayerPacket = new MovePlayerPacket();
+		$this->moveActorPacket = new MoveActorAbsolutePacket();
+	}
 
     public function onDamage(EntityDamageEvent $event): void {
         $entity = $event->getEntity();
@@ -94,34 +92,43 @@ class EventHandler implements Listener {
         $player = $event->getPlayer();
 
         if ($this->plugin->getConfig()->get("enable-look-to-players", true)) {
-            if ($event->getFrom()->distance($event->getTo()) < 0.1) {
+            if ($event->getFrom()->distance($event->getTo()) < 1) {
                 return;
             }
 
             foreach ($player->getWorld()->getNearbyEntities($player->getBoundingBox()->expandedCopy($this->plugin->getConfig()->get("max-look-distance", 8), $this->plugin->getConfig()->get("max-look-distance", 8), $this->plugin->getConfig()->get("max-look-distance", 8)), $player) as $entity) {
                 if (($entity instanceof CustomHuman) or $entity instanceof BaseNPC) {
-                    $angle = atan2($player->getLocation()->z - $entity->getLocation()->z, $player->getLocation()->x - $entity->getLocation()->x);
+	                $location = $player->getLocation();
+	                $entityLocation = $entity->getLocation();
+	                $angle = atan2($location->z - $entityLocation->z, $location->x - $entityLocation->x);
                     $yaw = (($angle * 180) / M_PI) - 90;
-                    $angle = atan2((new Vector2($entity->getLocation()->x, $entity->getLocation()->z))->distance(new Vector2($player->getLocation()->x, $player->getLocation()->z)), $player->getLocation()->y - $entity->getLocation()->y);
+
+	                $this->tempVector->x = $location->x;
+	                $this->tempVector->y = $location->z;
+
+	                $this->tempVector2->x = $entityLocation->x;
+	                $this->tempVector2->y = $entityLocation->z;
+
+	                $angle = atan2(($this->tempVector2)->distance($this->tempVector), $location->y - $entityLocation->y);
                     $pitch = (($angle * 180) / M_PI) - 90;
 
                     if ($entity instanceof CustomHuman and !$entity->canWalk() and $entity->canLookToPlayers()) {
-                        $pk = new MovePlayerPacket();
+	                    $pk = $this->movePlayerPacket;
                         $pk->actorRuntimeId = $entity->getId();
-                        $pk->position = $entity->getLocation()->add(0, $entity->getEyeHeight(), 0);
+	                    $pk->position = $entityLocation->add(0, $entity->getEyeHeight(), 0);
                         $pk->yaw = $yaw;
                         $pk->pitch = $pitch;
                         $pk->headYaw = $yaw;
                         $pk->onGround = $entity->onGround;
-                        $player->getNetworkSession()->sendDataPacket($pk);
+	                    $player->getNetworkSession()->sendDataPacket($pk, true);
                     } elseif ($entity instanceof BaseNPC and $entity->canLookToPlayers()) {
-                        $pk = new MoveActorAbsolutePacket();
+	                    $pk = $this->moveActorPacket;
                         $pk->actorRuntimeId = $entity->getId();
-                        $pk->position = $entity->getLocation()->asVector3();
+	                    $pk->position = $entityLocation->asVector3();
                         $pk->pitch = $pitch;
                         $pk->yaw = $yaw;
                         $pk->headYaw = $yaw;
-                        $player->getNetworkSession()->sendDataPacket($pk);
+	                    $player->getNetworkSession()->sendDataPacket($pk, true);
                     }
                 }
             }

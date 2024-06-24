@@ -10,16 +10,19 @@ declare(strict_types=1);
 namespace brokiem\snpc\entity;
 
 use pocketmine\block\Air;
+use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Flowable;
 use pocketmine\block\Liquid;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 
 final class WalkingHuman extends CustomHuman {
+	protected function getInitialGravity() : float {
+		return 0.08;
+	}
 
-    public Vector3 $randomPosition;
-    protected $gravity = 0.08;
-    protected $jumpVelocity = 0.45;
+	public Vector3 $randomPosition;
+	protected float $jumpVelocity = 0.45;
     private int $findNewPosition = 0;
     private float $speed = 0.35;
     private int $jumpTick = 30;
@@ -107,7 +110,7 @@ final class WalkingHuman extends CustomHuman {
         if ($this->jumpTick === 0) {
             $this->jumpTick = 20;
             $pos = $this->getLocation()->add($this->getDirectionVector()->x * $this->getScale(), 0, $this->getDirectionVector()->z * $this->getScale())->round();
-            return $this->getWorld()->getBlock($pos)->getId() !== 0 and !$this->getWorld()->getBlock($pos) instanceof Flowable;
+            return $this->getWorld()->getBlock($pos)->getTypeId() !== BlockTypeIds::AIR and !$this->getWorld()->getBlock($pos) instanceof Flowable;
         }
 
         return false;

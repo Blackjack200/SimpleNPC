@@ -22,6 +22,7 @@ class Commands extends Command implements PluginOwned {
 
     public function __construct(string $name, private SimpleNPC $owner) {
         parent::__construct($name, "SimpleNPC commands");
+		$this->setPermission("simplenpc.command");
     }
 
     public function execute(CommandSender $sender, string $commandLabel, array $args): bool {
@@ -35,11 +36,6 @@ class Commands extends Command implements PluginOwned {
         if (isset($args[0])) {
             switch (strtolower($args[0])) {
                 case "ui":
-                    if (!$sender->hasPermission("simplenpc.ui")) {
-                        $sender->sendMessage(TextFormat::RED . "You don't have permission");
-                        return true;
-                    }
-
                     if (!$sender instanceof Player) {
                         $sender->sendMessage("Only player can run this command");
                         return true;
@@ -48,20 +44,10 @@ class Commands extends Command implements PluginOwned {
                     FormManager::getInstance()->sendUIForm($sender);
                     break;
                 case "reload":
-                    if (!$sender->hasPermission("simplenpc.reload")) {
-                        $sender->sendMessage(TextFormat::RED . "You don't have permission");
-                        return true;
-                    }
-
                     $plugin->initConfiguration();
                     $sender->sendMessage(TextFormat::GREEN . "SimpleNPC Config reloaded successfully!");
                     break;
                 case "id":
-                    if (!$sender->hasPermission("simplenpc.id")) {
-                        $sender->sendMessage(TextFormat::RED . "You don't have permission");
-                        return true;
-                    }
-
                     if (!isset($plugin->idPlayers[$sender->getName()])) {
                         $plugin->idPlayers[$sender->getName()] = true;
                         $sender->sendMessage(TextFormat::DARK_GREEN . "Hit the npc that you want to see the ID");
@@ -74,11 +60,6 @@ class Commands extends Command implements PluginOwned {
                 case "add":
                     if (!$sender instanceof Player) {
                         $sender->sendMessage("Only player can run this command!");
-                        return true;
-                    }
-
-                    if (!$sender->hasPermission("simplenpc.spawn")) {
-                        $sender->sendMessage(TextFormat::RED . "You don't have permission");
                         return true;
                     }
 
@@ -128,11 +109,6 @@ class Commands extends Command implements PluginOwned {
                     break;
                 case "delete":
                 case "remove":
-                    if (!$sender->hasPermission("simplenpc.remove")) {
-                        $sender->sendMessage(TextFormat::RED . "You don't have permission");
-                        return true;
-                    }
-
                     if (isset($args[1]) && is_numeric($args[1])) {
                         $entity = $plugin->getServer()->getWorldManager()->findEntity((int)$args[1]);
 
@@ -165,11 +141,6 @@ class Commands extends Command implements PluginOwned {
                         return true;
                     }
 
-                    if (!$sender->hasPermission("simplenpc.edit")) {
-                        $sender->sendMessage(TextFormat::RED . "You don't have permission");
-                        return true;
-                    }
-
                     if (!isset($args[1]) || !is_numeric($args[1])) {
                         $sender->sendMessage(TextFormat::RED . "Usage: /snpc edit <id>");
                         return true;
@@ -178,11 +149,6 @@ class Commands extends Command implements PluginOwned {
                     FormManager::getInstance()->sendEditForm($sender, $args, (int)$args[1]);
                     break;
                 case "list":
-                    if (!$sender->hasPermission("simplenpc.list")) {
-                        $sender->sendMessage(TextFormat::RED . "You don't have permission");
-                        return true;
-                    }
-
                     $entityNames = [];
                     foreach ($plugin->getServer()->getWorldManager()->getWorlds() as $world) {
                         $entityNames = array_map(static function(Entity $entity): string {
