@@ -22,11 +22,11 @@ use pocketmine\player\Player;
 use pocketmine\utils\TextFormat;
 
 class CustomHuman extends Human {
-	public const string TAG_SKIN = "Skin";
-	public const string TAG_ENABLE_ROTATION = "EnableRotation";
-	public const string TAG_SHOW_NAMETAG = "ShowNametag";
-	public const string TAG_SCALE = "Scale";
-	public const string TAG_COMMAND = "Commands";
+	public const TAG_SKIN = "Skin";
+	public const TAG_ENABLE_ROTATION = "EnableRotation";
+	public const TAG_SHOW_NAMETAG = "ShowNametag";
+	public const TAG_SCALE = "Scale";
+	public const TAG_COMMAND = "Commands";
 	protected bool $gravityEnabled = false;
 
 	protected function getInitialGravity() : float { return 0.0; }

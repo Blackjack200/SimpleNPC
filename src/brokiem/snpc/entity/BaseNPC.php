@@ -23,10 +23,10 @@ use pocketmine\player\Player;
 use pocketmine\utils\TextFormat;
 
 abstract class BaseNPC extends Entity {
-	public const string TAG_SHOW_NAMETAG = "ShowNametag";
-	public const string TAG_SCALE = "Scale";
-	public const string TAG_ENABLE_ROTATION = "EnableRotation";
-	public const string TAG_COMMANDS = "Commands";
+	public const TAG_SHOW_NAMETAG = "ShowNametag";
+	public const TAG_SCALE = "Scale";
+	public const TAG_ENABLE_ROTATION = "EnableRotation";
+	public const TAG_COMMANDS = "Commands";
 	protected bool $gravityEnabled = false;
 
 	protected function getInitialGravity() : float { return 0.0; }
