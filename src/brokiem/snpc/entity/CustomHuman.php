@@ -12,7 +12,6 @@ namespace brokiem\snpc\entity;
 use brokiem\snpc\event\SNPCDeletionEvent;
 use brokiem\snpc\manager\command\CommandManager;
 use brokiem\snpc\SimpleNPC;
-use pocketmine\console\ConsoleCommandSender;
 use pocketmine\entity\Human;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\CompoundTag;
