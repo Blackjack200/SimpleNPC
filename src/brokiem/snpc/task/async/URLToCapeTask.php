@@ -47,7 +47,7 @@ class URLToCapeTask extends AsyncTask {
 
 	    if ($img === null) {
 		    if (is_file($file)) {
-			   // unlink($file);
+			    unlink($file);
 		    }
 		    return;
 	    }
@@ -55,7 +55,7 @@ class URLToCapeTask extends AsyncTask {
 	    $this->setResult($img);
 
 	    if (is_file($file)) {
-		   // unlink($file);
+		    unlink($file);
 	    }
     }
 
