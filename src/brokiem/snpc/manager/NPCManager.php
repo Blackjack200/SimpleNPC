@@ -114,6 +114,7 @@ class NPCManager {
 
         if ($nametag !== null) {
             $entity->setNameTag(str_replace("{line}", "\n", $nametag));
+            $entity->setNameTag(str_replace("{space}", "", $nametag));
             $entity->setNameTagAlwaysVisible();
         }
 

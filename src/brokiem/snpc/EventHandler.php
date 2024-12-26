@@ -27,10 +27,10 @@ use pocketmine\player\Player;
 
 class EventHandler implements Listener {
 
-	protected $tempVector;
-	protected $movePlayerPacket;
-	protected $moveActorPacket;
-	protected $tempVector2;
+	protected Vector2 $tempVector;
+	protected MovePlayerPacket $movePlayerPacket;
+	protected MoveActorAbsolutePacket $moveActorPacket;
+	protected Vector2 $tempVector2;
 
 	public function __construct(private SimpleNPC $plugin) {
 		$this->tempVector = new Vector2(0, 0);
@@ -44,6 +44,7 @@ class EventHandler implements Listener {
 
         if ($entity instanceof CustomHuman || $entity instanceof BaseNPC) {
             $event->cancel();
+			return;
         }
 
         if ($event instanceof EntityDamageByEntityEvent) {
@@ -73,19 +74,8 @@ class EventHandler implements Listener {
     }
 
     public function onQuit(PlayerQuitEvent $event): void {
-        $player = $event->getPlayer();
-
-        if (isset($this->plugin->lastHit[$player->getName()])) {
-            unset($this->plugin->lastHit[$player->getName()]);
-        }
-
-        if (isset($this->plugin->removeNPC[$player->getName()])) {
-            unset($this->plugin->removeNPC[$player->getName()]);
-        }
-
-        if (isset($this->plugin->idPlayers[$player->getName()])) {
-            unset($this->plugin->idPlayers[$player->getName()]);
-        }
+	    $name = $event->getPlayer()->getName();
+	    unset($this->plugin->lastHit[$name], $this->plugin->removeNPC[$name], $this->plugin->idPlayers[$name]);
     }
 
     public function onMove(PlayerMoveEvent $event): void {

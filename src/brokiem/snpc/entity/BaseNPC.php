@@ -13,7 +13,6 @@ use brokiem\snpc\event\SNPCDeletionEvent;
 use brokiem\snpc\manager\command\CommandManager;
 use brokiem\snpc\SimpleNPC;
 use pocketmine\entity\Entity;
-use pocketmine\entity\EntitySizeInfo;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ListTag;
@@ -27,11 +26,13 @@ abstract class BaseNPC extends Entity {
 	public const TAG_SCALE = "Scale";
 	public const TAG_ENABLE_ROTATION = "EnableRotation";
 	public const TAG_COMMANDS = "Commands";
+	public const TAG_GRAVITY = "Gravity";
+
 	protected bool $gravityEnabled = false;
 
-	protected function getInitialGravity() : float { return 0.0; }
+	protected function getInitialDragMultiplier() : float { return 0.02; }
 
-	protected function getInitialDragMultiplier() : float { return 0.0; }
+	protected function getInitialGravity() : float { return 0.08; }
 
 	protected bool $lookToPlayers;
 
@@ -47,6 +48,7 @@ abstract class BaseNPC extends Entity {
 
 	    $this->setNameTagAlwaysVisible((bool) $nbt->getByte(self::TAG_SHOW_NAMETAG, 1));
 	    $this->setNameTagVisible((bool) $nbt->getByte(self::TAG_SHOW_NAMETAG, 1));
+	    $this->setHasGravity((bool) $nbt->getByte(self::TAG_GRAVITY, 1));
 	    $this->setScale($nbt->getFloat(self::TAG_SCALE, 1));
 	    $this->setScale($this->getScale());
     }
@@ -56,8 +58,9 @@ abstract class BaseNPC extends Entity {
 	    $nbt->setFloat(self::TAG_SCALE, $this->getScale()); //pm doesn't save this to the nbt
 	    $nbt->setByte(self::TAG_ENABLE_ROTATION, (int) $this->lookToPlayers);
 	    $nbt->setByte(self::TAG_SHOW_NAMETAG, (int) $this->isNameTagAlwaysVisible());
+	    $nbt->setByte(self::TAG_GRAVITY, (int) $this->hasGravity());
 
-        $listTag = new ListTag([], NBT::TAG_String); //commands
+	    $listTag = new ListTag([], NBT::TAG_String); //commands
         foreach ($this->commandManager->getAll() as $command) {
             $listTag->push(new StringTag($command));
         }
@@ -128,8 +131,4 @@ abstract class BaseNPC extends Entity {
     public function getCommandManager(): CommandManager {
         return $this->commandManager;
     }
-
-    abstract protected function getInitialSizeInfo(): EntitySizeInfo;
-
-    abstract public static function getNetworkTypeId(): string;
 }

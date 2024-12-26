@@ -9,9 +9,9 @@ use brokiem\snpc\entity\CustomHuman;
 use brokiem\snpc\manager\form\FormManager;
 use brokiem\snpc\manager\NPCManager;
 use brokiem\snpc\SimpleNPC;
+use brokiem\snpc\task\async\URLToSkinTask;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
-use pocketmine\entity\Entity;
 use pocketmine\player\Player;
 use pocketmine\plugin\Plugin;
 use pocketmine\plugin\PluginOwned;
@@ -34,7 +34,8 @@ class Commands extends Command implements PluginOwned {
         $plugin = $this->getOwningPlugin();
 
         if (isset($args[0])) {
-            switch (strtolower($args[0])) {
+	        $playerName = $sender->getName();
+	        switch (strtolower($args[0])) {
                 case "ui":
                     if (!$sender instanceof Player) {
                         $sender->sendMessage("Only player can run this command");
@@ -48,50 +49,62 @@ class Commands extends Command implements PluginOwned {
                     $sender->sendMessage(TextFormat::GREEN . "SimpleNPC Config reloaded successfully!");
                     break;
                 case "id":
-                    if (!isset($plugin->idPlayers[$sender->getName()])) {
-                        $plugin->idPlayers[$sender->getName()] = true;
+	                if (!isset($plugin->idPlayers[$playerName])) {
+		                $plugin->idPlayers[$playerName] = true;
                         $sender->sendMessage(TextFormat::DARK_GREEN . "Hit the npc that you want to see the ID");
                     } else {
-                        unset($plugin->idPlayers[$sender->getName()]);
+		                unset($plugin->idPlayers[$playerName]);
                         $sender->sendMessage(TextFormat::GREEN . "Tap to get NPC ID has been canceled");
                     }
                     break;
                 case "spawn":
                 case "add":
                     if (!$sender instanceof Player) {
-                        $sender->sendMessage("Only player can run this command!");
+	                    $sender->sendMessage(TextFormat::RED . "Only player can run this command!");
                         return true;
                     }
 
                     if (isset($args[1])) {
-                        if (array_key_exists(strtolower($args[1]) . "_snpc", SimpleNPC::getInstance()->getRegisteredNPC())) {
-                            if (is_a(SimpleNPC::getInstance()->getRegisteredNPC()[strtolower($args[1]) . "_snpc"][0], CustomHuman::class, true)) {
-	                            if (isset($args[3])) {
-		                            $skin = $args[3];
-		                            $targetSkin = Server::getInstance()->getPlayerByPrefix($skin)?->getSkin();
-		                            if ($targetSkin === null) {
-			                            $targetSkin = $sender->getSkin();
-		                            }
-	                            } else {
-		                            $targetSkin = $sender->getSkin();
-	                            }
-	                            $sender->sendMessage(TextFormat::DARK_GREEN . "Creating " . ucfirst($args[1]) . " NPC with nametag $args[2] for you...");
-	                            NPCManager::getInstance()->spawnNPC(strtolower($args[1]) . "_snpc", $sender, $sender->getName(), null, $sender->getSkin()->getSkinData());
-                            } else {
-                                if (isset($args[2])) {
-                                    NPCManager::getInstance()->spawnNPC(strtolower($args[1]) . "_snpc", $sender, $args[2]);
-                                    $sender->sendMessage(TextFormat::DARK_GREEN . "Creating " . ucfirst($args[1]) . " NPC with nametag $args[2] for you...");
-                                    return true;
-                                }
+	                    $npcType = strtolower($args[1]) . "_snpc";
+	                    $prettyNpcTypeName = ucfirst($args[1]);
+	                    $isUrl = false;
+	                    if (!array_key_exists($npcType, SimpleNPC::getInstance()->getRegisteredNPC())) {
+		                    $sender->sendMessage(TextFormat::RED . "Invalid entity type $prettyNpcTypeName or entity not registered!");
+		                    return true;
+	                    }
+	                    if (is_a(SimpleNPC::getInstance()->getRegisteredNPC()[$npcType][0], CustomHuman::class, true)) {
+		                    $skinOrigin = $playerName;
+		                    $targetSkin = $sender->getSkin();
+		                    if (isset($args[3])) {
+			                    $arg = $args[3];
+			                    $targ = Server::getInstance()->getPlayerByPrefix($arg);
+			                    if ($targ !== null) {
+				                    $skinOrigin = $targ->getName();
+				                    $targetSkin = $targ->getSkin();
+			                    } else {
+				                    $isUrl = true;
+			                    }
+		                    }
+		                    $sender->sendMessage(TextFormat::DARK_GREEN . "Creating $prettyNpcTypeName NPC with nametag $args[2] using skin $skinOrigin from for you...");
+		                    $id = NPCManager::getInstance()->spawnNPC($npcType, $sender, $args[2], null, $targetSkin->getSkinData());
+		                    if ($id !== null) {
+			                    $npc = $sender->getServer()->getWorldManager()->findEntity($id);
+			                    if ($npc instanceof CustomHuman && $isUrl) {
+				                    $plugin->getServer()->getAsyncPool()->submitTask(new URLToSkinTask($sender->getName(), $plugin->getDataFolder(), (string) $args[3], $npc));
+			                    }
+		                    }
+	                    } else {
+		                    if (isset($args[2])) {
+			                    NPCManager::getInstance()->spawnNPC($npcType, $sender, $args[2]);
+			                    $sender->sendMessage(TextFormat::DARK_GREEN . "Creating $prettyNpcTypeName NPC with nametag $args[2] for you...");
+			                    return true;
+		                    }
+		                    $sender->sendMessage(TextFormat::DARK_GREEN . "Creating $prettyNpcTypeName NPC without nametag for you...");
+		                    NPCManager::getInstance()->spawnNPC($npcType, $sender);
+	                    }
 
-                                NPCManager::getInstance()->spawnNPC(strtolower($args[1]) . "_snpc", $sender);
-                            }
-                            $sender->sendMessage(TextFormat::DARK_GREEN . "Creating " . ucfirst($args[1]) . " NPC without nametag for you...");
-                        } else {
-                            $sender->sendMessage(TextFormat::RED . "Invalid entity type or entity not registered!");
-                        }
                     } else {
-                        $sender->sendMessage(TextFormat::RED . "Usage: /snpc spawn <type> optional: <nametag> <skinUrl>");
+	                    $sender->sendMessage(TextFormat::RED . "Usage: /snpc spawn <type> optional: <nametag> <skinUrl/usingSkin>");
                     }
                     break;
                 case "delete":
@@ -112,19 +125,19 @@ class Commands extends Command implements PluginOwned {
                         return true;
                     }
 
-                    if (!isset($plugin->removeNPC[$sender->getName()])) {
-                        $plugin->removeNPC[$sender->getName()] = true;
+		        if (!isset($plugin->removeNPC[$playerName])) {
+			        $plugin->removeNPC[$playerName] = true;
                         $sender->sendMessage(TextFormat::DARK_GREEN . "Hit the npc that you want to delete or remove");
                         return true;
                     }
 
-                    unset($plugin->removeNPC[$sender->getName()]);
+		        unset($plugin->removeNPC[$playerName]);
                     $sender->sendMessage(TextFormat::GREEN . "Remove npc by hitting has been canceled");
                     break;
                 case "edit":
                 case "manage":
                     if (!$sender instanceof Player) {
-                        $sender->sendMessage("Only player can run this command!");
+	                    $sender->sendMessage(TextFormat::RED . "Only player can run this command!");
                         return true;
                     }
 
@@ -136,17 +149,9 @@ class Commands extends Command implements PluginOwned {
                     FormManager::getInstance()->sendEditForm($sender, $args, (int)$args[1]);
                     break;
                 case "list":
-                    $entityNames = [];
-                    foreach ($plugin->getServer()->getWorldManager()->getWorlds() as $world) {
-                        $entityNames = array_map(static function(Entity $entity): string {
-                            return TextFormat::YELLOW . "ID: (" . $entity->getId() . ") " . TextFormat::GREEN . $entity->getNameTag() . " §7-- §b" . $entity->getWorld()->getFolderName() . ": " . $entity->getLocation()->getFloorX() . "/" . $entity->getLocation()->getFloorY() . "/" . $entity->getLocation()->getFloorZ();
-                        }, array_filter($world->getEntities(), static function(Entity $entity): bool {
-                            return $entity instanceof BaseNPC or $entity instanceof CustomHuman;
-                        }));
-                    }
-
-                    $sender->sendMessage("§cNPC List and Location: (" . count($entityNames) . ")\n §f- " . implode("\n - ", $entityNames));
-                    break;
+	                $list = FormManager::getInstance()->getPrettyNpcList($plugin);
+	                $sender->sendMessage($list);
+	                break;
                 case "help":
 	                $this->sendHelp($sender);
                     break;
@@ -169,7 +174,18 @@ class Commands extends Command implements PluginOwned {
         return $this->owner;
     }
 
-	private function sendHelp(CommandSender $sender) : null {
-		return $sender->sendMessage("\n§7---- ---- ---- - ---- ---- ----\n§eCommand List:\n§2» /snpc spawn <type> <nametag> <skinUrl>\n§2» /snpc edit <id>\n§2» /snpc reload\n§2» /snpc ui\n§2» /snpc remove <id>\n§2» /snpc list\n§7---- ---- ---- - ---- ---- ----");
+	private function sendHelp(CommandSender $sender) : void {
+		$sender->sendMessage(<<<HELP
+§7---- ---- ---- - ---- ---- ----
+§eCommand List:
+§2» /snpc spawn <type> <nametag> <skinUrl/usingSkin>
+§2» /snpc edit <id>
+§2» /snpc reload
+§2» /snpc ui
+§2» /snpc remove <id>
+§2» /snpc list
+§7---- ---- ---- - ---- ---- ----
+HELP
+		);
 	}
 }

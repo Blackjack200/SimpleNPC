@@ -11,6 +11,7 @@ namespace brokiem\snpc\entity\npc;
 
 use brokiem\snpc\entity\BaseNPC;
 use pocketmine\entity\EntitySizeInfo;
+use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 
 class AxolotlNPC extends BaseNPC {
 
@@ -22,6 +23,6 @@ class AxolotlNPC extends BaseNPC {
     }
 
     public static function getNetworkTypeId(): string {
-        return "minecraft:axolotl";
+        return EntityIds::AXOLOTL;
     }
 }

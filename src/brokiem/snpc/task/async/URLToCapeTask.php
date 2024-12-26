@@ -15,6 +15,7 @@ use pocketmine\scheduler\AsyncTask;
 use pocketmine\Server;
 use pocketmine\utils\Internet;
 use pocketmine\utils\TextFormat;
+use Symfony\Component\Filesystem\Path;
 
 class URLToCapeTask extends AsyncTask {
 
@@ -26,42 +27,36 @@ class URLToCapeTask extends AsyncTask {
         $uniqId = uniqid('cape', true);
         $parse = parse_url($this->url, PHP_URL_PATH);
 
-        if ($parse === null || $parse === false) {
-            return;
-        }
+	    if ($parse === null || $parse === false) {
+		    return;
+	    }
 
-        $extension = pathinfo($parse, PATHINFO_EXTENSION);
-        $data = Internet::getURL($this->url);
+	    $extension = pathinfo($parse, PATHINFO_EXTENSION);
+	    $data = Internet::getURL($this->url);
 
-        if ($data === null || $extension !== "png") {
-            return;
-        }
+	    if ($data === null || strtolower($extension) !== "png") {
+		    return;
+	    }
 
-        file_put_contents($this->dataPath . $uniqId . ".$extension", $data->getBody());
-        $file = $this->dataPath . $uniqId . ".$extension";
+	    $imageData = $data->getBody();
 
-        $img = @imagecreatefrompng($file);
+	    $file = Path::join($this->dataPath, "$uniqId.png");
+	    file_put_contents($file, $imageData);
 
-        if (!$img) {
-            if (is_file($file)) {
-                unlink($file);
-            }
-            return;
-        }
+	    $img = URLToSkinTask::getSkinDataFromPNG($file);
 
-        $rgba = "";
-        for ($y = 0; $y < imagesy($img); $y++) {
-            for ($x = 0; $x < imagesx($img); $x++) {
-                $argb = imagecolorat($img, $x, $y);
-                $rgba .= chr(($argb >> 16) & 0xff) . chr(($argb >> 8) & 0xff) . chr($argb & 0xff) . chr(((~($argb >> 24)) << 1) & 0xff);
-            }
-        }
-        $this->setResult($rgba);
-        imagedestroy($img);
+	    if ($img === null) {
+		    if (is_file($file)) {
+			   // unlink($file);
+		    }
+		    return;
+	    }
 
-        if (is_file($file)) {
-            unlink($file);
-        }
+	    $this->setResult($img);
+
+	    if (is_file($file)) {
+		   // unlink($file);
+	    }
     }
 
     public function onCompletion(): void {
@@ -69,9 +64,9 @@ class URLToCapeTask extends AsyncTask {
         [$npc] = $this->fetchLocal("snpc_urltocape");
         $player = Server::getInstance()->getPlayerExact($this->player);
 
-        if ($player === null) {
-            return;
-        }
+	    if ($player === null || !$player->isOnline()) {
+		    return;
+	    }
 
         if ($this->getResult() === null) {
             $player->sendMessage(TextFormat::RED . "Set Cape failed! Invalid link detected (the link doesn't contain images)");
@@ -83,10 +78,16 @@ class URLToCapeTask extends AsyncTask {
             return;
         }
 
-        $capeSkin = new Skin($npc->getSkin()->getSkinId(), $npc->getSkin()->getSkinData(), (string)$this->getResult(), $npc->getSkin()->getGeometryName(), $npc->getSkin()->getGeometryData());
-        $npc->setSkin($capeSkin);
+	    $skin = $npc->getSkin();
+	    $npc->setSkin(new Skin(
+		    $skin->getSkinId(),
+		    $skin->getSkinData(),
+		    (string) $this->getResult(),
+		    $skin->getGeometryName(),
+		    $skin->getGeometryData()
+	    ));
         $npc->sendSkin();
 
-        $player->sendMessage(TextFormat::GREEN . "Successfull set cape to npc (ID: " . $npc->getId() . ")");
+        $player->sendMessage(TextFormat::GREEN . "Successfull set cape to npc (ID: {$npc->getId()})");
     }
 }

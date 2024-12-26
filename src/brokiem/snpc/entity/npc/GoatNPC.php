@@ -11,6 +11,7 @@ namespace brokiem\snpc\entity\npc;
 
 use brokiem\snpc\entity\BaseNPC;
 use pocketmine\entity\EntitySizeInfo;
+use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 
 class GoatNPC extends BaseNPC {
 
@@ -22,6 +23,6 @@ class GoatNPC extends BaseNPC {
     }
 
     public static function getNetworkTypeId(): string {
-        return "minecraft:goat";
+        return EntityIds::GOAT;
     }
 }

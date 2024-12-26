@@ -11,6 +11,7 @@ namespace brokiem\snpc\entity\npc;
 
 use brokiem\snpc\entity\BaseNPC;
 use pocketmine\entity\EntitySizeInfo;
+use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 
 class GlowsquidNPC extends BaseNPC {
 
@@ -22,6 +23,6 @@ class GlowsquidNPC extends BaseNPC {
     }
 
     public static function getNetworkTypeId(): string {
-        return "minecraft:glow_squid";
+        return EntityIds::GLOW_SQUID;
     }
 }

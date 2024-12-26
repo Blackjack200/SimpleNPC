@@ -1,13 +1,17 @@
 name: SimpleNPC
 main: brokiem\snpc\SimpleNPC
-version: 4.0.3
+version: 4.0.4
 api: 5.0.0
-author: brokiem
+author:
+  - brokiem
+  - Blackjack200
 
-website: https://github.com/brokiem/SimpleNPC
+website: https://github.com/Blackjack200/SimpleNPC
 
 permissions:
   simplenpc.command:
     default: op
   simplenpc.rca:
+    default: op
+  simplenpc.list:
     default: op

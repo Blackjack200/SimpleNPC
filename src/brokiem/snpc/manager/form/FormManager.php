@@ -14,6 +14,7 @@ use brokiem\snpc\entity\CustomHuman;
 use brokiem\snpc\entity\WalkingHuman;
 use brokiem\snpc\SimpleNPC;
 use brokiem\snpc\task\async\URLToCapeTask;
+use brokiem\snpc\task\async\URLToSkinTask;
 use EasyUI\element\Button;
 use EasyUI\element\Dropdown;
 use EasyUI\element\Input;
@@ -24,7 +25,7 @@ use EasyUI\variant\SimpleForm;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Skin;
-use pocketmine\item\ItemIds;
+use pocketmine\item\ItemTypeIds;
 use pocketmine\player\Player;
 use pocketmine\Server;
 use pocketmine\utils\SingletonTrait;
@@ -51,7 +52,7 @@ class FormManager {
                                     $dropdown->addOption(new Option(str_replace("_snpc", "", $npcName), ucfirst(str_replace(["_snpc", "_"], [" NPC", " "], $npcName))));
                                     $cusForm->addElement("type", $dropdown);
 
-                                    $cusForm->addElement("nametag", new Input("NPC Nametag: [string]\n" . 'Note: Use (" ") if nametag has space'));
+	                                $cusForm->addElement("nametag", new Input("NPC Nametag: [string]\n" . 'Note: Use (" ") if nametag has space, Use ("{line}") if nametag has enter'));
                                     if (is_a($saveNames[0], CustomHuman::class, true)) {
 	                                    $cusForm->addElement("skin", new Input("NPC Skin: [url or player name], left empty to use yours"));
                                     }
@@ -67,18 +68,8 @@ class FormManager {
                             break;
                         case "npcList":
                             if ($sender->hasPermission("simplenpc.list")) {
-                                $list = "";
-                                foreach ($plugin->getServer()->getWorldManager()->getWorlds() as $world) {
-                                    $entityNames = array_map(static function(Entity $entity): string {
-                                        return TextFormat::YELLOW . "ID: (" . $entity->getId() . ") " . TextFormat::GREEN . $entity->getNameTag() . " §7-- §b" . $entity->getWorld()->getFolderName() . ": " . $entity->getLocation()->getFloorX() . "/" . $entity->getLocation()->getFloorY() . "/" . $entity->getLocation()->getFloorZ();
-                                    }, array_filter($world->getEntities(), static function(Entity $entity): bool {
-                                        return $entity instanceof BaseNPC or $entity instanceof CustomHuman;
-                                    }));
-
-                                    $list .= "§cNPC List and Location: (" . count($entityNames) . ")\n §f- " . implode("\n - ", $entityNames);
-                                }
-
-                                $simpleForm->setHeaderText($list);
+	                            $list = $this->getPrettyNpcList($plugin);
+	                            $simpleForm->setHeaderText($list);
                                 $simpleForm->addButton(new Button("Print", null, function(Player $sender) use ($list) {
                                     $sender->sendMessage($list);
                                 }));
@@ -97,7 +88,7 @@ class FormManager {
             $type = $response->getDropdownSubmittedOptionId("type") === null ? "" : strtolower($response->getDropdownSubmittedOptionId("type"));
             $nametag = $response->getInputSubmittedText("nametag") === "" ? $player->getName() : $response->getInputSubmittedText("nametag");
 	        $skin = $response->getInputSubmittedText("skin");
-            $npcEditId = $response->getInputSubmittedText("snpcid_edit");
+	        $npcEditId = $response->getInputSubmittedText("snpcid_edit");
 
             if ($npcEditId != "") {
                 $plugin->getServer()->getCommandMap()->dispatch($player, "snpc edit $npcEditId");
@@ -155,7 +146,7 @@ class FormManager {
                                 break;
                             case "setHeld":
                                 if ($entity instanceof CustomHuman) {
-	                                if ($sender->getInventory()->getItemInHand()->getTypeId() === BlockTypeIds::AIR) {
+	                                if ($sender->getInventory()->getItemInHand()->getTypeId() === ItemTypeIds::fromBlockTypeId(BlockTypeIds::AIR)) {
                                         $sender->sendMessage(TextFormat::RED . "Please hold the item in your hand");
                                     } else {
                                         $entity->sendHeldItemFrom($sender);
@@ -282,13 +273,20 @@ class FormManager {
                         return;
                     }
 
-	                $targetSkin = Server::getInstance()->getPlayerByPrefix($skin)?->getSkin();
-	                if ($targetSkin === null) {
-		                $targetSkin = $player->getSkin();
+	                $targetSkin = $player->getSkin();
+
+	                $targ = Server::getInstance()->getPlayerByPrefix($skin);
+	                if ($targ !== null) {
+		                $skinOrigin = $targ->getName();
+		                $targetSkin = $targ->getSkin();
+	                } else {
+						$skinOrigin = $skin;
+		                $plugin->getServer()->getAsyncPool()->submitTask(new URLToSkinTask($player->getName(), $plugin->getDataFolder(), $skin, $entity));
 	                }
+
 	                $entity->setSkin($targetSkin);
 	                $entity->sendSkin();
-                    $player->sendMessage(TextFormat::GREEN . "Successfully change npc skin (NPC ID: " . $entity->getId() . ")");
+	                $player->sendMessage(TextFormat::GREEN . "Successfully change npc skin to $skinOrigin (NPC ID: " . $entity->getId() . ")");
                 } elseif ($scale != "") {
                     if ((float)$scale <= 0) {
                         $player->sendMessage("Scale must be greater than 0");
@@ -308,4 +306,25 @@ class FormManager {
         }
         $sender->sendMessage(TextFormat::YELLOW . "SimpleNPC NPC with ID: " . $args[1] . " not found!");
     }
+
+	public function getPrettyNpcList(SimpleNPC $plugin) : string {
+		$list = "";
+		foreach ($plugin->getServer()->getWorldManager()->getWorlds() as $world) {
+			$npcList = array_filter($world->getEntities(), static fn(Entity $entity) => $entity instanceof BaseNPC or $entity instanceof CustomHuman);
+			if (count($npcList) === 0) {
+				continue;
+			}
+			$entityNames = array_map(
+				static function(Entity $entity) {
+					$location = $entity->getLocation();
+					$pos = $location->getFloorX() . "/" . $location->getFloorY() . "/" . $location->getFloorZ();
+					$replacedName = str_replace("\n", '{line}', $entity->getNameTag());
+					return TextFormat::YELLOW . "ID: ({$entity->getId()})\n" . TextFormat::GREEN . "  - Name: $replacedName \n§r§7  - §b$pos";
+				},
+				$npcList
+			);
+			$list .= "§c{$world->getFolderName()}: (" . count($entityNames) . ")\n" . implode("\n", $entityNames) . "\n";
+		}
+		return $list;
+	}
 }
