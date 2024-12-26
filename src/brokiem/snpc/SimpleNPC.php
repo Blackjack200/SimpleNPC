@@ -37,7 +37,6 @@ class SimpleNPC extends PluginBase {
     public array $removeNPC = [];
     public array $lastHit = [];
     public array $idPlayers = [];
-    public const IS_DEV = true;
 	public static ConsoleCommandSender $sender;
 
     protected function onEnable(): void {
@@ -45,10 +44,6 @@ class SimpleNPC extends PluginBase {
             $this->getLogger()->alert("UI/Form dependency not found! Please download this plugin from poggit or install the UI/Form virion. Disabling plugin...");
             $this->getServer()->getPluginManager()->disablePlugin($this);
             return;
-        }
-
-        if (self::IS_DEV) {
-            $this->getLogger()->warning("You are using the Development version of SimpleNPC. The plugin will experience errors, crashes, or bugs. Only use this version if you are testing. Don't use the Dev version in production!");
         }
 
         self::setInstance($this);
