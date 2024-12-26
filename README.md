@@ -1,11 +1,10 @@
-<h1>SimpleNPC<img src="assets/icon.png" height="64" width="64" align="left" alt=""></h1><br>
+<h1 style="display: flex;align-items: center;"><img src="assets/icon.png" height="64" width="64" alt="">SimpleNPC</h1>
 
-<b>An Ultimate NPC plugin made by brokiem for PocketMine-MP.</b><br>
+__An Ultimate NPC plugin made by brokiem for PocketMine-MP.__
+
 [![License](https://img.shields.io/github/license/brokiem/SimpleNPC)](https://github.com/brokiem/SimpleNPC)
-[![Star](https://img.shields.io/github/stars/brokiem/SimpleNPC)](https://github.com/brokiem/SimpleNPC/stargazers)
-[![Discord](https://img.shields.io/discord/830063409000087612?color=7389D8&label=discord)](https://discord.com/invite/jy6abSrjhQ)
+[![Star](https://img.shields.io/github/stars/Blackjack200/SimpleNPC)](https://github.com/Blackjack200/SimpleNPC/stargazers)
 [![Support me on Patreon](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Dbrokiem%26type%3Dpatrons&style=flat)](https://patreon.com/brokiem)
-[![Poggit](https://poggit.pmmp.io/shield.dl.total/SimpleNPC)](https://poggit.pmmp.io/p/SimpleNPC)
 
 ## ✨ Features
 
@@ -27,16 +26,17 @@
 
 <b>For more command info, please look directly at ```/snpc help```</b><br> or you can use <b>```/snpc ui```</b><br>
 
-| Command | Description | Permission | Default |
-| --- | --- | --- | --- |
-| ```/snpc``` | ```SimpleNPC command list``` | ```none``` | ```true``` |
-| ```/snpc ui``` | ```Manage npc with UI/Form``` | ```simplenpc.ui``` | ```op``` |
-| ```/snpc spawn``` | ```Spawn an npc``` | ```simplenpc.spawn``` | ```op``` |
-| ```/snpc edit``` | ```Edit the npc``` | ```simplenpc.edit``` | ```op``` |
-| ```/snpc id``` | ```Get the npc id``` | ```simplenpc.id``` | ```op``` |
-| ```/snpc reload``` | ```Reload plugin config``` | ```simplenpc.reload``` | ```op``` |
-| ```/snpc remove``` | ```Remove the npc``` | ```simplenpc.remove``` | ```op``` |
-| ```/snpc list``` | ```See the npc list``` | ```simplenpc.list``` | ```op``` |
+| Command            | Description                               | Permission              | Default  |
+|--------------------|-------------------------------------------|-------------------------|----------|
+| ```/snpc```        | ```SimpleNPC command list```              | ```simplenpc.command``` | ```op``` |
+| ```/snpc ui```     | ```Manage npc with UI/Form```             | ```simplenpc.command``` | ```op``` |
+| ```/snpc spawn```  | ```Spawn an npc```                        | ```simplenpc.command``` | ```op``` |
+| ```/snpc edit```   | ```Edit the npc```                        | ```simplenpc.command``` | ```op``` |
+| ```/snpc id```     | ```Get the npc id```                      | ```simplenpc.command``` | ```op``` |
+| ```/snpc reload``` | ```Reload plugin config```                | ```simplenpc.command``` | ```op``` |
+| ```/snpc remove``` | ```Remove the npc```                      | ```simplenpc.command``` | ```op``` |
+| ```/snpc list```   | ```See the npc list```                    | ```simplenpc.list```    | ```op``` |
+| ```/rca```         | ```Execute command by player like sudo``` | ```simplenpc.rca```     | ```op``` |
 
 ## 📝 Todo List
 
