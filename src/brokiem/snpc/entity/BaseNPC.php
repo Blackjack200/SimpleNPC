@@ -68,7 +68,7 @@ abstract class BaseNPC extends Entity {
         return $nbt;
     }
 
-    public function despawn(Player $deletor = null): bool {
+    public function despawn(?Player $deletor = null): bool {
         (new SNPCDeletionEvent($this, $deletor))->call();
 
         if (!$this->isFlaggedForDespawn()) {
